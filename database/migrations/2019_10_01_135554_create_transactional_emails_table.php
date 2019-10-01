@@ -15,6 +15,7 @@ class CreateTransactionalEmailsTable extends Migration
     {
         Schema::create('transactional_emails', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('subject');
             $table->text('content');
             $table->tinyInteger('status')->default(0)->comment('Pending = 0, Delivered = 1, Failed = 2')->nullable();
             $table->timestamps();
