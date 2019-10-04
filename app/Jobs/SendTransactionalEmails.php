@@ -7,6 +7,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Log;
 
 class SendTransactionalEmails implements ShouldQueue
 {
@@ -14,6 +15,7 @@ class SendTransactionalEmails implements ShouldQueue
 
     public $to;
     public $recipientname;
+    public $tries = 3;
 
     /**
      * Create a new job instance.
@@ -43,12 +45,55 @@ class SendTransactionalEmails implements ShouldQueue
         $sendgrid = new \SendGrid(env('SENDGRID_API_KEY'));
         try {
             $response = $sendgrid->send($email);
-            print $response->statusCode() . "\n";
-            print_r($response->headers());
-            print $response->body() . "\n";
+            Log::info('Sendingg Email through Send Grid API --> ' . $response->statusCode());
+            // print $response->statusCode() . "\n";
+            // print_r($response->headers());
+            // print $response->body() . "\n";
             //return response()->json($response, 201);
+
+            /*if ($response->statusCode() == '401') {
+                # Instantiate the client\
+                SendinBlue\Client\Configuration::getDefaultConfiguration()->setApiKey("api-key", env("API_KEY_V3"));
+
+                $api_instance = new SendinBlue\Client\Api\EmailCampaignsApi();
+                $emailCampaigns = new \SendinBlue\Client\Model\CreateEmailCampaign();
+
+                # Define the campaign settings\
+                $email_campaigns['name'] = "Campaign sent via the API";
+                $email_campaigns['subject'] = "My subject";
+                $email_campaigns['sender'] = array("name": "Admin", "email":"admin@takeaway.com");
+                $email_campaigns['type'] = "classic";
+
+                    # Content that will be sent\
+                    "htmlContent"=> "Congratulations! You successfully sent this example campaign via the SendinBlue API.",
+
+                    # Select the recipients\
+                    "recipients"=> array("listIds"=> [2, 7]),
+
+                    # Schedule the sending in one hour\
+                    "scheduledAt"=> "2018-01-01 00:00:01"
+                );
+
+                # Make the call to the client\
+                try {
+                    $result = $api_instance->createEmailCampaign($emailCampaigns);
+                    print_r($result);
+                } catch (Exception $e) {
+                    echo 'Exception when calling EmailCampaignsApi->createEmailCampaign: ', $e->getMessage(), PHP_EOL;
+                }
+            }*/
         } catch (Exception $e) {
             echo 'Caught exception: ',  $e->getMessage(), "\n";
         }
     }
+
+        /**
+         * Determine the time at which the job should timeout.
+         *
+         * @return \DateTime
+         */
+        public function retryUntil()
+        {
+            return now()->addSeconds(5);
+        }
 }
