@@ -7,6 +7,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use App\Events\JobProgressHasChanged;
 use Log;
 
 class SendTransactionalEmails implements ShouldQueue
@@ -48,6 +49,7 @@ class SendTransactionalEmails implements ShouldQueue
         try {
             $response = $sendgrid->send($email);
             Log::info('Sendingg Email through Send Grid API --> ' . $response->statusCode());
+            event(new JobProgressHasChanged($this->emailid,$response->statusCode()));
             // print $response->statusCode() . "\n";
             // print_r($response->headers());
             // print $response->body() . "\n";
@@ -70,10 +72,10 @@ class SendTransactionalEmails implements ShouldQueue
     /**
      * The job failed to process.
      *
-     * @param  Exception  $exception
+     * @param  $exception
      * @return void
      */
-    public function failed(Exception $exception)
+    public function failed($exception)
     {
         $mailin = new \Sendinblue\Mailin("https://api.sendinblue.com/v2.0",env("API_KEY_V3"));
         $data = array( "to" => array($this->to=> $this->recipientname),
