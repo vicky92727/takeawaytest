@@ -13,8 +13,9 @@ class SendTransactionalEmails implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $to;
-    public $recipientname;
+    private $to;
+    private $recipientname;
+    private $emailid;
     public $tries = 3;
 
     /**
@@ -26,6 +27,7 @@ class SendTransactionalEmails implements ShouldQueue
     {
         $this->to = $request->to;
         $this->recipientname = $request->recipientname;
+        $this->emailid = $request->id;
     }
 
     /**
@@ -50,50 +52,36 @@ class SendTransactionalEmails implements ShouldQueue
             // print_r($response->headers());
             // print $response->body() . "\n";
             //return response()->json($response, 201);
-
-            /*if ($response->statusCode() == '401') {
-                # Instantiate the client\
-                SendinBlue\Client\Configuration::getDefaultConfiguration()->setApiKey("api-key", env("API_KEY_V3"));
-
-                $api_instance = new SendinBlue\Client\Api\EmailCampaignsApi();
-                $emailCampaigns = new \SendinBlue\Client\Model\CreateEmailCampaign();
-
-                # Define the campaign settings\
-                $email_campaigns['name'] = "Campaign sent via the API";
-                $email_campaigns['subject'] = "My subject";
-                $email_campaigns['sender'] = array("name": "Admin", "email":"admin@takeaway.com");
-                $email_campaigns['type'] = "classic";
-
-                    # Content that will be sent\
-                    "htmlContent"=> "Congratulations! You successfully sent this example campaign via the SendinBlue API.",
-
-                    # Select the recipients\
-                    "recipients"=> array("listIds"=> [2, 7]),
-
-                    # Schedule the sending in one hour\
-                    "scheduledAt"=> "2018-01-01 00:00:01"
-                );
-
-                # Make the call to the client\
-                try {
-                    $result = $api_instance->createEmailCampaign($emailCampaigns);
-                    print_r($result);
-                } catch (Exception $e) {
-                    echo 'Exception when calling EmailCampaignsApi->createEmailCampaign: ', $e->getMessage(), PHP_EOL;
-                }
-            }*/
         } catch (Exception $e) {
             echo 'Caught exception: ',  $e->getMessage(), "\n";
         }
     }
 
-        /**
-         * Determine the time at which the job should timeout.
-         *
-         * @return \DateTime
-         */
-        public function retryUntil()
-        {
-            return now()->addSeconds(5);
-        }
+    /**
+     * Determine the time at which the job should timeout.
+     *
+     * @return \DateTime
+     */
+    public function retryUntil()
+    {
+        return now()->addSeconds(5);
+    }
+
+    /**
+     * The job failed to process.
+     *
+     * @param  Exception  $exception
+     * @return void
+     */
+    public function failed(Exception $exception)
+    {
+        $mailin = new \Sendinblue\Mailin("https://api.sendinblue.com/v2.0",env("API_KEY_V3"));
+        $data = array( "to" => array($this->to=> $this->recipientname),
+            "from" => array("admin@takeaway.com", "Admin"),
+            "subject" => "Test Email through Mailinblue",
+            "html" => "This is the <h1>HTML</h1>"
+        );
+
+        var_dump($mailin->send_email($data));
+    }
 }

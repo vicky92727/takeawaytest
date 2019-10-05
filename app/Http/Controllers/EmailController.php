@@ -7,11 +7,17 @@ use App\Jobs\SendTransactionalEmails;
 
 class EmailController extends Controller
 {
+	private $model;
+    
     public function index(){
     	return TransactionalEmail::all();
     }
 
     public function sending(Request $request){
+    	
+    	$this->model = new TransactionalEmail();
+        $emailResponse = $this->model->saveEmailStatus($request);
+        $request->request->add(['id' => $emailResponse]); //add request
     	SendTransactionalEmails::dispatch($request);
     }
 
